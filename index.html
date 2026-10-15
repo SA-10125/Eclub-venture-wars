@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style>
+<title>Venture Wars</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+/* Layout: single phone column. Brand + rules on the intro; slim top bar, one auction card, paddle grid and a sticky SELL button during play. */
+:root{--bg:#0b0907;--gold:#f7b731;--gold-deep:#c98d12;--gold-shadow:#7a5509;--red:#c0261b;--red-text:#ff6a55;--ink:#f3e9d2;--muted:#cdb27a;--card:#17120c;--well:#0f0b06;--line:#4a3711;--dim:#3a2c12;
+  --display:'Bebas Neue',Impact,sans-serif;--body:'Playfair Display',Georgia,serif;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at 50% 0%,#3b2a0c 0%,transparent 60%),var(--bg);color:var(--ink);font-family:var(--body);-webkit-tap-highlight-color:transparent;overscroll-behavior:none;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#app{max-width:480px;margin:0 auto;padding-block:10px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));text-align:center}
+
+/* top bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;min-height:36px;margin-bottom:4px}
+.mini{font-family:var(--display);font-size:22px;letter-spacing:2px;color:var(--gold)}
+#app.intro .mini{visibility:hidden}
+.snd{font-family:var(--display);font-size:16px;letter-spacing:1.5px;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 14px;min-height:36px;cursor:pointer}
+.snd[aria-pressed="false"]{opacity:.65}
+.snd:focus-visible,.btn:focus-visible,#gavel:focus-visible,.inp:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+
+/* brand */
+.logo{width:64px;height:auto;display:block;margin:0 auto 4px;mix-blend-mode:screen}
+.pre{font-weight:800;color:var(--red-text);font-size:15px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(48px,15vw,64px);line-height:.95;color:var(--gold);margin:6px 0 0;letter-spacing:1px;text-wrap:balance}
+.tag{font-family:var(--display);color:var(--red-text);letter-spacing:3px;font-size:18px}
+.small{font-size:14px;color:var(--muted)}
+.event{letter-spacing:2px;margin-top:2px}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.item{font-size:19px;font-weight:800;margin:6px 0 6px;text-wrap:balance}
+.lothead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.lot{font-size:14px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.segs{display:flex;gap:6px}
+.segs i{display:block;width:30px;height:6px;border-radius:3px;background:var(--dim)}
+.segs i.done{background:var(--gold)}
+.segs i.cur{background:transparent;box-shadow:inset 0 0 0 1.5px var(--gold)}
+.price{font-family:var(--display);font-size:72px;color:var(--gold);line-height:1;transition:transform .12s;font-variant-numeric:tabular-nums}
+.price.pop{transform:scale(1.1)}
+.price.crash{color:var(--red-text)}
+.bidline{min-height:22px;font-size:15px}
+.cue{min-height:22px;font-size:15px;color:#e8c26a;font-style:italic}
+.flash{animation:fl .35s}
+@keyframes fl{0%{background:#5a3f08}100%{background:transparent}}
+
+/* paddles */
+.crowdhead{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px}
+.count{font-family:var(--display);font-size:32px;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+.count.last{color:var(--red-text)}
+.crowd{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:6px 0 14px;padding-top:12px}
+.p{height:40px;border-radius:50% 50% 8px 8px;border:1px solid;font-family:var(--display);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-size:15px;transition:transform .18s,background .18s,color .18s,opacity .18s}
+.p.in{background:#2a1f0e;border-color:#8a6a1f;color:var(--gold)}
+.p.top{background:var(--gold);border-color:var(--gold);color:#000;transform:translateY(-10px)}
+.p.out{background:transparent;border:1px dashed var(--dim);color:#5a4822;transform:translateY(6px);opacity:.7}
+.p.cheer{background:var(--dim);border-color:var(--gold);color:var(--gold);transform:translateY(-8px)}
+.p.groan{background:#2a0f0c;border-color:var(--red);color:var(--red-text);transform:translateY(4px)}
+
+/* buttons */
+#gavel{width:100%;border:0;border-radius:14px;padding:20px;font-family:var(--display);font-size:40px;letter-spacing:2px;background:linear-gradient(180deg,var(--gold),var(--gold-deep));color:#1a1200;cursor:pointer;box-shadow:0 6px 0 var(--gold-shadow);touch-action:manipulation;position:sticky;bottom:10px;z-index:5}
+#gavel:active{transform:translateY(5px);box-shadow:0 1px 0 var(--gold-shadow)}
+#gavel:disabled{opacity:.4}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;border:0;border-radius:12px;padding:12px 22px;font-family:var(--display);font-size:26px;letter-spacing:1.5px;background:var(--gold);color:#1a1200;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold)}
+.btn.register{display:flex;width:100%;min-height:72px;padding:18px 26px;font-size:34px;font-weight:800;letter-spacing:2px;box-shadow:0 5px 0 var(--gold-shadow)}
+.tip{font-size:14px;color:var(--muted);margin:10px 0 0;text-wrap:balance}
+
+/* intro */
+.rules{list-style:none;margin:8px 0 16px;padding:0;text-align:left;display:grid;gap:10px;font-size:16px;line-height:1.35}
+.rules li{padding-left:20px;position:relative}
+.rules li::before{content:"";position:absolute;left:2px;top:.5em;width:8px;height:8px;background:var(--gold);transform:rotate(45deg)}
+.inp{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--well);color:var(--ink);font-family:inherit;font-size:18px;text-align:center;-webkit-user-select:text;user-select:text}
+.inp.err{border-color:var(--red-text)}
+.errmsg{min-height:20px;margin:4px 0 6px;color:var(--red-text);font-size:14px}
+
+/* result + win */
+.card.bad{border:2px solid var(--red);box-shadow:0 0 0 3px rgba(192,38,27,.35),0 0 30px rgba(192,38,27,.65);animation:vib .55s,bpulse 1s .55s ease-in-out infinite alternate}
+@keyframes vib{10%,50%,90%{transform:translateX(-8px)}30%,70%{transform:translateX(8px)}0%,100%{transform:none}}
+@keyframes bpulse{from{box-shadow:0 0 0 3px rgba(192,38,27,.25),0 0 14px rgba(192,38,27,.4)}to{box-shadow:0 0 0 4px rgba(192,38,27,.5),0 0 34px rgba(192,38,27,.8)}}
+.fail{font-family:var(--display);font-size:52px;line-height:1;color:var(--red-text);letter-spacing:1px}
+.stamp{display:inline-block;border:4px solid var(--red);color:var(--red-text);font-family:var(--display);font-size:44px;padding:0 14px;transform:rotate(-8deg);margin:6px 0;animation:st .25s ease-out}
+@keyframes st{from{transform:rotate(-8deg) scale(2.2);opacity:0}to{transform:rotate(-8deg) scale(1);opacity:1}}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.stat{background:var(--well);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+.stat b{display:block;font-family:var(--display);font-weight:400;font-size:36px;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.actions{display:grid;gap:10px;margin-top:12px}
+
+/* loader + celebration */
+#loader{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
+#loader.out{opacity:0;pointer-events:none}
+.gwrap{width:220px;position:relative;left:64px}
+.lg{width:220px;height:auto;display:block;transform-origin:94% 50%;animation:swing .6s ease-in infinite alternate}
+.lg.hit{animation:hit .45s ease-in forwards}
+@keyframes swing{from{transform:rotate(40deg)}to{transform:rotate(0deg)}}
+@keyframes hit{from{transform:rotate(55deg)}to{transform:rotate(0deg)}}
+.block{width:170px;height:30px;border-radius:50%;margin-top:-16px;background:radial-gradient(ellipse at 50% 35%,#f0b45c,#c98430);box-shadow:0 12px 0 #8a5516,0 22px 24px rgba(0,0,0,.6)}
+.block.shake{animation:shk .35s}
+@keyframes shk{20%{transform:translateY(5px) scaleX(1.05)}50%{transform:translateY(-2px)}100%{transform:none}}
+.ltxt{font-family:var(--display);letter-spacing:3px;color:var(--gold);font-size:22px;margin-top:18px}
+#fx{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center}
+#fx canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#fxin{display:flex;flex-direction:column;align-items:center;padding:0 16px;text-align:center}
+.stamp.big{font-size:68px;opacity:0;animation:st .3s .4s ease-out forwards;margin-top:18px}
+.soldto{font-family:var(--display);color:var(--gold);font-size:28px;letter-spacing:2px;margin-top:10px}
+.capline{font-size:16px;color:var(--ink);margin-top:4px}
+.small.tapskip{margin-top:14px;opacity:.7}
+.lg.drop{animation:drop .5s ease-in forwards}
+@keyframes drop{from{transform:rotate(0)}to{transform:rotate(2deg) translateY(46px)}}
+@keyframes bshk{0%,100%{transform:none}15%{transform:translate(-9px,5px)}35%{transform:translate(8px,-4px)}55%{transform:translate(-6px,3px)}75%{transform:translate(4px,-2px)}}
+#fxin.bshake{animation:bshk .45s}
+
+@media(max-width:480px){.price{font-size:64px}.item{font-size:18px}.card{padding:12px}.crowd{gap:6px}.p{height:38px}#gavel{padding:22px}}
+@media(prefers-reduced-motion:reduce){.lg,.card.bad,#fxin.bshake,.block.shake{animation:none}.price{transition:none}}
+</style>
+
+</head>
+<body>
+<div id="loader"><div class="gwrap"><svg class="lg" viewBox="0 0 260 120" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gw" x1="0" x2="1"><stop offset="0" stop-color="#3a0c08"/><stop offset=".35" stop-color="#9a2f20"/><stop offset="1" stop-color="#3a0c08"/></linearGradient><linearGradient id="gb" x1="0" x2="1"><stop offset="0" stop-color="#9a6a0c"/><stop offset=".4" stop-color="#ffd86b"/><stop offset="1" stop-color="#9a6a0c"/></linearGradient></defs><rect x="82" y="53" width="168" height="13" rx="6.5" fill="#2e0b07"/><rect x="28" y="10" width="54" height="95" rx="14" fill="url(#gw)"/><rect x="28" y="26" width="54" height="5" fill="#3a0c08"/><rect x="28" y="84" width="54" height="5" fill="#3a0c08"/><rect x="26" y="46" width="58" height="26" rx="2" fill="url(#gb)"/></svg></div><div class="block"></div><div class="ltxt">SETTING UP THE AUCTION…</div></div>
+<div id="fx"><canvas id="cv"></canvas><div id="fxin"></div></div>
+
+<main id="app" class="intro">
+  <div class="topbar">
+    <span class="mini">VENTURE WARS</span>
+    <button type="button" class="snd" id="snd" aria-pressed="true">SOUND ON</button>
+  </div>
+
+  <header id="brand">
+    <img class="logo" alt="E-Club" src="data:image/png;base64,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">
+    <div class="pre">The E-CLUB presents</div>
+    <h1>VENTURE WARS</h1>
+    <div class="tag">BID. SABOTAGE. PITCH. SURVIVE.</div>
+    <div class="small event">AN EVENT AT MAAYA</div>
+    <div class="small" id="eventdetails" hidden></div>
+  </header>
+
+  <section id="intro" class="card">
+    <div class="item">You're the auctioneer.</div>
+    <ul class="rules">
+      <li>Bidders keep raising the price. Paddles go down as they drop out.</li>
+      <li>Hit <b>SELL</b> while a few paddles are still up. Wait for the last bidder and they may walk out, crashing the price.</li>
+      <li>Sell all 3 lots close to the peak to unlock registration.</li>
+    </ul>
+    <input id="pname" class="inp" maxlength="20" placeholder="Your name" autocomplete="name" aria-label="Your name">
+    <div class="errmsg" id="nerr"></div>
+    <button class="btn" id="start" type="button">TAKE THE PODIUM</button>
+  </section>
+
+  <section id="game" hidden>
+    <div class="card" id="lotcard">
+      <div class="lothead"><span class="lot" id="lotno"></span><span class="segs" id="segs"><i></i><i></i><i></i></span></div>
+      <div class="item" id="item"></div>
+      <div class="price" id="price">₹0</div>
+      <div class="bidline" id="bidline">&nbsp;</div>
+      <div class="cue" id="cue">&nbsp;</div>
+    </div>
+    <div class="crowdhead"><span class="small">PADDLES STILL UP</span><span class="count" id="count">12</span></div>
+    <div class="crowd" id="crowd"></div>
+    <button id="gavel" type="button" disabled>SELL</button>
+    <p class="tip" id="tip"></p>
+  </section>
+
+  <section id="result" class="card" hidden></section>
+  <section id="win" class="card" hidden></section>
+</main>
+
+<script>
+// ===== Settings =====
+var FORM_URL = "https://forms.gle/Ghq2ryL8NaUiueEY9";
+// To prefill the name in the form, use the long "viewform" link above and put the name field id here, e.g. "entry.123456789"
+var FORM_NAME_FIELD = "";
+// Optional line under the event name, e.g. "12 Nov · Main Auditorium"
+var EVENT_DETAILS = "";
+
+//<lots>
+var LOTS = [
+  {label:"LOT 1 OF 3", item:"One startup problem statement (HealthTech)", start:2000, inc:500, nMin:9,  nMax:10, base:760, slow:260, need:0.70, back:0},
+  {label:"LOT 2 OF 3", item:"A pitch deck guaranteed to go viral",        start:3000, inc:600, nMin:10, nMax:11, base:640, slow:220, need:0.75, back:1},
+  {label:"FINAL LOT",  item:"A MAAYA FEST PASS",                          start:4000, inc:800, nMin:11, nMax:12, base:540, slow:180, need:0.80, back:2}
+];
+//</lots>
+var NAMES = ["Rohan","Ananya","Kabir","Meera","Dev","Ishaan","Tara","Vik","Nia","Arjun","Zoya","Sid"];
+
+//<plan>
+// Every paddle has a tick when it sits down (leave). Some come back once (back) and sit down again (leave2).
+// One paddle (F) never leaves, so exactly one bidder is left from tick "last" onward.
+function presentAt(p, k){ return p.back ? (k < p.leave || (k >= p.back && k < p.leave2)) : k < p.leave; }
+function makePlan(L, N){
+  var last = N - 1 - (Math.random() < 0.5 ? 1 : 0);
+  var F = Math.floor(Math.random() * 12), P = [], idx = [];
+  for (var i = 0; i < 12; i++){ P.push({leave:Infinity, back:0, leave2:0}); if (i !== F) idx.push(i); }
+  idx.forEach(function(i){ P[i].leave = 1 + Math.floor(Math.random() * last); });
+  P[idx[Math.floor(Math.random() * idx.length)]].leave = last;
+  var cand = idx.filter(function(i){ return P[i].leave >= Math.floor(N * 0.4) && P[i].leave <= last - 3; });
+  for (var f = 0; f < L.back && cand.length; f++){
+    var j = Math.floor(Math.random() * cand.length), c = cand.splice(j, 1)[0];
+    P[c].back = P[c].leave + 2;
+    P[c].leave2 = Math.min(last, P[c].back + 1 + Math.floor(Math.random() * 2));
+  }
+  return {P:P, F:F, last:last};
+}
+function presentList(plan, k){ var r = []; for (var i = 0; i < plan.P.length; i++) if (presentAt(plan.P[i], k)) r.push(i); return r; }
+//</plan>
+
+var $ = function(id){ return document.getElementById(id); };
+var fmt = function(n){ return "₹" + n.toLocaleString("en-IN"); };
+var FINE = !!(window.matchMedia && matchMedia("(hover:hover) and (pointer:fine)").matches);
+var li = 0, k = 0, N = 0, price = 0, peak = 0, state = "idle", timers = [], lastName = "", pname = "", attempt = 1, earned = 0, caps = [], plan = null, pad = [], pn = [];
+
+function h(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function fill(box, kids){ box.textContent = ""; kids.forEach(function(n){ box.appendChild(n); }); }
+function later(fn, ms){ timers.push(setTimeout(fn, ms)); }
+function clearAll(){ timers.forEach(clearTimeout); timers = []; }
+function shuffle(a){ for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function show(id){
+  ["intro","game","result","win"].forEach(function(x){ $(x).hidden = x !== id; });
+  $("brand").hidden = id !== "intro";
+  $("app").className = id === "intro" ? "intro" : "";
+  window.scrollTo(0, 0);
+}
+
+// ===== Sound (synthesised, no files) =====
+var AC = null, muted = false;
+try { muted = localStorage.getItem("vw-muted") === "1"; } catch(e) {}
+function audio(){
+  if (!AC){ try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+  if (AC && AC.state === "suspended") AC.resume();
+  return AC;
+}
+function tone(f, t, d, type, vol, to){
+  if (muted) return; var a = audio(); if (!a) return;
+  var o = a.createOscillator(), g = a.createGain(), n = a.currentTime + (t || 0);
+  o.type = type || "sine"; o.frequency.setValueAtTime(f, n);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, n + d);
+  g.gain.setValueAtTime(vol || .1, n); g.gain.exponentialRampToValueAtTime(.0001, n + d);
+  o.connect(g); g.connect(a.destination); o.start(n); o.stop(n + d + .03);
+}
+function noise(t, d, vol, freq){
+  if (muted) return; var a = audio(); if (!a) return;
+  var len = Math.floor(a.sampleRate * d), buf = a.createBuffer(1, len, a.sampleRate), data = buf.getChannelData(0);
+  for (var i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  var s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = buf; f.type = "lowpass"; f.frequency.value = freq || 1200; g.gain.value = vol || .2;
+  s.connect(f); f.connect(g); g.connect(a.destination); s.start(a.currentTime + (t || 0));
+}
+var sfx = {
+  bid:function(n){ tone(360 + n * 30, 0, .07, "triangle", .07); },
+  drop:function(){ tone(200, 0, .14, "sine", .06, 120); },
+  gavel:function(){ noise(0, .18, .5, 900); tone(150, 0, .22, "sine", .3, 60); },
+  cheer:function(){ noise(0, .9, .16, 2600); },
+  groan:function(){ tone(300, 0, .6, "sawtooth", .07, 110); }
+};
+function paintSound(){ var b = $("snd"); b.textContent = muted ? "SOUND OFF" : "SOUND ON"; b.setAttribute("aria-pressed", muted ? "false" : "true"); }
+$("snd").addEventListener("click", function(){ muted = !muted; try { localStorage.setItem("vw-muted", muted ? "1" : "0"); } catch(e) {} paintSound(); if (!muted){ audio(); sfx.bid(4); } });
+paintSound();
+
+// ===== Game =====
+function setPrice(v, cls){
+  var el = $("price"); el.textContent = fmt(v); el.className = "price " + (cls || "");
+  if (!cls){ void el.offsetWidth; el.classList.add("pop"); setTimeout(function(){ el.classList.remove("pop"); }, 120); }
+}
+function paintSegs(){ var s = $("segs").children; for (var i = 0; i < 3; i++) s[i].className = i < li ? "done" : (i === li ? "cur" : ""); }
+function buildCrowd(){
+  var c = $("crowd"), nums = []; c.textContent = ""; pad = [];
+  while (nums.length < 12){ var n = 10 + Math.floor(Math.random() * 89); if (nums.indexOf(n) < 0) nums.push(n); }
+  for (var i = 0; i < 12; i++){ var d = h("div", "p in", String(nums[i])); c.appendChild(d); pad.push(d); }
+}
+function paint(kk, top){
+  var now = presentList(plan, kk), set = {};
+  now.forEach(function(i){ set[i] = 1; });
+  for (var i = 0; i < pad.length; i++) pad[i].className = "p " + (set[i] ? (i === top ? "in top" : "in") : "out");
+  $("count").textContent = now.length; $("count").classList.toggle("last", now.length === 1);
+}
+function crowdReact(cls){ for (var i = 0; i < pad.length; i++) pad[i].className = "p " + cls; }
+function tipFor(n){
+  var t = n === 0 ? "Sell while a few paddles are still up. If the last bidder walks out, the price crashes."
+        : n === 1 ? "Bidders can jump back in. A quiet moment does not mean it is over."
+        : "Final lot. The room is fast and the price falls hard if you wait.";
+  return t + (FINE ? " Space also sells." : "");
+}
+
+function startLot(){
+  clearAll(); show("game"); paintSegs();
+  var L = LOTS[li];
+  N = L.nMin + Math.floor(Math.random() * (L.nMax - L.nMin + 1));
+  plan = makePlan(L, N); k = 0; price = L.start; peak = L.start + N * L.inc; state = "opening";
+  pn = shuffle(NAMES.slice());
+  $("lotno").textContent = L.label; $("item").textContent = L.item; $("tip").textContent = tipFor(li);
+  $("bidline").textContent = "Opening bid " + fmt(price); $("cue").textContent = "Bidding opens…";
+  $("lotcard").classList.remove("flash");
+  buildCrowd(); paint(0, -1); setPrice(price);
+  $("gavel").disabled = true;
+  later(function(){ state = "bidding"; $("gavel").disabled = false; nextBid(); }, 900);
+}
+
+function nextBid(){
+  if (state !== "bidding") return;
+  var L = LOTS[li], prev = presentList(plan, k);
+  k++; price = L.start + k * L.inc; setPrice(price);
+  var now = presentList(plan, k);
+  var top = k === N ? plan.F : now[Math.floor(Math.random() * now.length)];
+  paint(k, top);
+  lastName = pn[top]; $("bidline").textContent = lastName + " bids " + fmt(price);
+  var left = prev.filter(function(i){ return now.indexOf(i) < 0; });
+  var joined = now.filter(function(i){ return prev.indexOf(i) < 0; });
+  var cue = "";
+  if (now.length === 1) cue = "One bidder left. Sell before they walk out!";
+  else if (joined.length) cue = pn[joined[0]] + " jumps back in!";
+  else if (left.length === 1) cue = pn[left[0]] + " sits down.";
+  else if (left.length > 1) cue = left.length + " bidders sit down.";
+  $("cue").textContent = cue || " ";
+  sfx.bid(k); if (left.length) sfx.drop();
+  if (k < N) later(nextBid, (L.base + L.slow * (k / N)) * (0.88 + Math.random() * 0.26));
+  else later(dropOut, (L.base + L.slow) * (0.9 + Math.random() * 0.45));
+}
+
+function dropOut(){
+  if (state !== "bidding") return;
+  state = "done"; $("gavel").disabled = true;
+  var sale = Math.round(price * 0.4);
+  setPrice(sale, "crash"); $("cue").textContent = "The last bidder walked out!";
+  crowdReact("groan"); sfx.groan();
+  later(function(){ finish("late", sale); }, 1100);
+}
+
+function slam(){
+  if (state !== "bidding" || k < 1) return;
+  state = "done"; clearAll(); $("gavel").disabled = true;
+  $("lotcard").classList.add("flash"); sfx.gavel();
+  var L = LOTS[li], ratio = price / peak, pct = Math.round(ratio * 100);
+  if (ratio >= L.need){
+    crowdReact("cheer"); $("cue").textContent = "SOLD!";
+    earned += price; caps.push(ratio);
+    var sp = price, who = lastName;
+    setTimeout(sfx.cheer, 120);
+    celebrate(function(){ if (li === LOTS.length - 1) winGame(); else { li++; attempt = 1; startLot(); } },
+      pname + " sold to " + who + " for " + fmt(sp), pct + "% of the peak price");
+  } else {
+    crowdReact("groan"); sfx.groan(); $("cue").textContent = "The room groans.";
+    var pr = price; later(function(){ finish("early", pr); }, 900);
+  }
+}
+
+function finish(kind, val){
+  var r = $("result"); show("result"); r.className = "card bad";
+  if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+  var early = kind === "early";
+  var b = h("button", "btn", "TRY THIS LOT AGAIN"); b.type = "button";
+  b.onclick = function(){ attempt++; startLot(); };
+  fill(r, [
+    h("div", "fail", early ? "TOO EARLY" : "TOO LATE"),
+    h("div", "item", early ? "You sold at " + fmt(val) + "." : "The last bidder walked out."),
+    h("p", "small", early ? "It was heading to " + fmt(peak) + ". Wait for fewer paddles." : "The price crashed to " + fmt(val) + ". Sell a bit sooner."),
+    h("div", "small", "Attempt " + attempt),
+    b
+  ]);
+}
+
+function formHref(){
+  if (!FORM_NAME_FIELD) return FORM_URL;
+  return FORM_URL + (FORM_URL.indexOf("?") < 0 ? "?" : "&") + "usp=pp_url&" + FORM_NAME_FIELD + "=" + encodeURIComponent(pname);
+}
+function winGame(){
+  show("win");
+  var avg = Math.round(caps.reduce(function(a, b){ return a + b; }, 0) / caps.length * 100), best = avg, note = "";
+  try {
+    var o = parseInt(localStorage.getItem("vw-best"), 10);
+    if (!isNaN(o) && o > best) best = o;
+    localStorage.setItem("vw-best", String(best));
+    note = "Best on this phone: " + best + "%";
+  } catch(e) {}
+  var st = h("div", "stats");
+  [[fmt(earned), "Total sold"], [avg + "%", "Avg. of peak"]].forEach(function(x){
+    var s = h("div", "stat"); s.appendChild(h("b", null, x[0])); s.appendChild(h("span", null, x[1])); st.appendChild(s);
+  });
+  var a = h("a", "btn register", "REGISTER NOW"); a.href = formHref(); a.target = "_blank"; a.rel = "noopener";
+  var acts = h("div", "actions"); acts.appendChild(a);
+  var kids = [h("div", "stamp", "ALL SOLD"), h("div", "item", "Perfect sale, " + pname + "!"), st, h("p", "small", "Now register for Venture Wars.")];
+  if (note) kids.push(h("div", "small", note));
+  kids.push(acts);
+  fill($("win"), kids);
+}
+
+// ===== Celebration overlay (tap to skip) =====
+var fxCb = null, fxTimers = [], confettiOn = false;
+function confetti(ms){
+  var cv = $("cv"), x = cv.getContext("2d"), W = cv.width = innerWidth, H = cv.height = innerHeight;
+  var cols = ["#f7b731","#c0261b","#f3e9d2","#ffd86b","#ff5a3c"], ps = [];
+  for (var i = 0; i < 140; i++) ps.push({x:W/2,y:H*0.55,vx:(Math.random()-.5)*14,vy:-Math.random()*16-4,s:5+Math.random()*7,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:cols[i%cols.length]});
+  var t0 = performance.now(); confettiOn = true;
+  (function f(t){
+    var e = t - t0; x.clearRect(0, 0, W, H);
+    if (!confettiOn) return;
+    ps.forEach(function(p){ p.vy += .35; p.x += p.vx; p.y += p.vy; p.r += p.vr; x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.s/2, -p.s/4, p.s, p.s/2); x.restore(); });
+    if (e < ms) requestAnimationFrame(f); else x.clearRect(0, 0, W, H);
+  })(t0);
+}
+function endFx(){
+  if (!fxCb) return;
+  fxTimers.forEach(clearTimeout); fxTimers = []; confettiOn = false;
+  var cb = fxCb; fxCb = null;
+  $("fx").style.display = "none";
+  Array.prototype.slice.call($("fx").querySelectorAll(".dbr")).forEach(function(n){ n.remove(); });
+  cb();
+}
+function celebrate(cb, line1, line2){
+  var GW = document.querySelector(".gwrap").outerHTML;
+  $("fxin").className = "";
+  $("fxin").innerHTML = GW.replace('class="lg"', 'class="lg hit"') + '<div class="block" id="blk"></div><div class="stamp big">SOLD!</div><div class="soldto" id="sl1"></div><div class="capline" id="sl2"></div><div class="small tapskip">Tap to continue</div>';
+  $("sl1").textContent = line1; $("sl2").textContent = line2;
+  $("fx").style.display = "flex"; fxCb = cb;
+  fxTimers = [
+    setTimeout(function(){ var b = $("blk"); if (b) b.classList.add("shake"); confetti(1500); if (navigator.vibrate) navigator.vibrate(60); }, 420),
+    setTimeout(breakStand, 420),
+    setTimeout(endFx, 2100)
+  ];
+}
+function breakStand(){
+  var g = document.querySelector("#fxin .lg"), b = $("blk"), fx = $("fx");
+  if (!g || !b) return;
+  g.setAttribute("class", "lg drop");
+  var r = b.getBoundingClientRect();
+  b.style.visibility = "hidden";
+  [["polygon(0 0,53% 0,45% 38%,55% 68%,49% 100%,0 100%)", -1], ["polygon(53% 0,100% 0,100% 100%,49% 100%,55% 68%,45% 38%)", 1]].forEach(function(hf){
+    var c = document.createElement("div"); c.className = "block dbr";
+    c.style.cssText = "position:fixed;margin:0;left:" + r.left + "px;top:" + r.top + "px;width:" + r.width + "px;height:" + r.height + "px;clip-path:" + hf[0] + ";box-shadow:none;border-bottom:12px solid #8a5516;box-sizing:content-box";
+    fx.appendChild(c);
+    c.animate([{transform:"none",opacity:1},{transform:"translate(" + (hf[1]*80) + "px,170px) rotate(" + (hf[1]*28) + "deg)",opacity:0}], {duration:900,easing:"cubic-bezier(.4,0,1,1)",fill:"forwards"});
+    setTimeout(function(){ c.remove(); }, 1000);
+  });
+  for (var i = 0; i < 18; i++){
+    var d = document.createElement("div"), z = 5 + Math.random() * 8;
+    d.className = "dbr";
+    d.style.cssText = "position:fixed;left:" + (r.left + r.width/2) + "px;top:" + (r.top + 8) + "px;width:" + z + "px;height:" + z + "px;background:" + (i % 3 ? "#c98430" : "#f7b731") + ";border-radius:2px";
+    fx.appendChild(d);
+    d.animate([{transform:"none",opacity:1},{transform:"translate(" + ((Math.random()-.5)*340) + "px," + (Math.random()*220-90) + "px) rotate(" + (Math.random()*540) + "deg)",opacity:0}], {duration:800 + Math.random()*400,easing:"ease-out",fill:"forwards"});
+    setTimeout((function(el){ return function(){ el.remove(); }; })(d), 1300);
+  }
+  $("fxin").classList.add("bshake");
+  if (navigator.vibrate) navigator.vibrate([120, 40, 60]);
+}
+
+// ===== Wiring =====
+var t0 = Date.now();
+function hideLoader(){ setTimeout(function(){ $("loader").classList.add("out"); }, Math.max(0, 900 - (Date.now() - t0))); }
+Promise.race([(document.fonts && document.fonts.ready) || Promise.resolve(), new Promise(function(r){ setTimeout(r, 2200); })]).then(hideLoader, hideLoader);
+
+if (EVENT_DETAILS){ $("eventdetails").textContent = EVENT_DETAILS; $("eventdetails").hidden = false; }
+
+function begin(){
+  var v = $("pname").value.replace(/\s+/g, " ").trim();
+  if (!v){ $("pname").classList.add("err"); $("nerr").textContent = "Enter your name to start."; $("pname").focus(); return; }
+  pname = v; li = 0; attempt = 1; earned = 0; caps = [];
+  audio(); startLot();
+}
+$("start").onclick = begin;
+$("pname").addEventListener("keydown", function(e){ if (e.key === "Enter") begin(); });
+$("pname").addEventListener("input", function(){ this.classList.remove("err"); $("nerr").textContent = ""; });
+$("gavel").addEventListener("pointerdown", function(e){ e.preventDefault(); slam(); });
+$("fx").addEventListener("pointerdown", endFx);
+document.addEventListener("keydown", function(e){
+  if (e.code !== "Space") return;
+  var t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+  if (state === "bidding"){ e.preventDefault(); slam(); }
+});
+</script>
+
+</body>
+</html>
